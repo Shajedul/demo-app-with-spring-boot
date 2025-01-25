@@ -5,13 +5,14 @@ import com.example.battery_api.dto.BatteryResponseDTO;
 import com.example.battery_api.model.Battery;
 import com.example.battery_api.service.BatteryMapper;
 import com.example.battery_api.service.BatteryService;
-import jakarta.validation.Valid;
+import jakarta.validation.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/api/batteries")
 @Validated
@@ -25,12 +26,58 @@ public class BatteryController {
     }
 
     @PostMapping
-    public ResponseEntity<List<BatteryResponseDTO>> saveBatteries(@Valid @RequestBody List<@Valid BatteryRequestDTO> requestDTOs) {
-        System.out.println("Incoming request payload: " + requestDTOs);
-        List<Battery> batteries = requestDTOs.stream().map(batteryMapper::toEntity).toList();
-        List<Battery> savedBatteries = batteryService.saveBatteries(batteries);
-        System.out.println(batteryMapper.toDTOList(savedBatteries));
-        return ResponseEntity.ok(batteryMapper.toDTOList(savedBatteries));
+    public ResponseEntity<Map<String, Object>> saveBatteries(@RequestBody List<BatteryRequestDTO> requestDTOs) {
+        System.out.println("HERE");
+        List<Battery> validBatteries = new ArrayList<>();
+        List<Map<String, Object>> invalidEntries = new ArrayList<>();
+
+        for (int i = 0; i < requestDTOs.size(); i++) {
+            BatteryRequestDTO requestDTO = requestDTOs.get(i);
+
+            try {
+                // Validate the DTO manually
+                validateBatteryRequestDTO(requestDTO);
+
+                // If valid, map to entity
+                Battery battery = batteryMapper.toEntity(requestDTO);
+                validBatteries.add(battery);
+            } catch (ConstraintViolationException ex) {
+                // Collect validation errors
+                Map<String, Object> errorEntry = new HashMap<>();
+                errorEntry.put("index", i);
+                errorEntry.put("data", requestDTO);
+                errorEntry.put("errors", extractValidationErrors(ex));
+                invalidEntries.add(errorEntry);
+            }
+        }
+
+        // Save only the valid batteries
+        List<Battery> savedBatteries = batteryService.saveBatteries(validBatteries);
+
+        // Prepare the response
+        Map<String, Object> response = new HashMap<>();
+        response.put("savedBatteries", batteryMapper.toDTOList(savedBatteries));
+        response.put("invalidEntries", invalidEntries);
+
+        return ResponseEntity.ok(response);
+    }
+
+    private void validateBatteryRequestDTO(BatteryRequestDTO requestDTO) {
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        Validator validator = factory.getValidator();
+        Set<ConstraintViolation<BatteryRequestDTO>> violations = validator.validate(requestDTO);
+
+        if (!violations.isEmpty()) {
+            throw new ConstraintViolationException(violations);
+        }
+    }
+
+    private Map<String, List<String>> extractValidationErrors(ConstraintViolationException ex) {
+        return ex.getConstraintViolations().stream()
+                .collect(Collectors.groupingBy(
+                        violation -> violation.getPropertyPath().toString(), // Group by field name
+                        Collectors.mapping(ConstraintViolation::getMessage, Collectors.toList()) // Collect multiple error messages in a list
+                ));
     }
 
     @GetMapping("/range")
