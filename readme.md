@@ -40,15 +40,17 @@ Alternatively, you can use an IDE like IntelliJ IDEA or Eclipse that supports Ma
 
 1. Download and install PostgreSQL from [here](https://www.postgresql.org/download/).
 2. Start the PostgreSQL service.
-3. Create a database named `battery_db`:
+3. Create a database and user:
 
    ```bash
    psql -U postgres
    CREATE DATABASE battery_db;
+   CREATE USER <your-username> WITH PASSWORD '<your-password>';
+   GRANT ALL PRIVILEGES ON DATABASE battery_db TO <your-username>;
    \q
    ```
 
-   Replace the default credentials in the application with your PostgreSQL credentials. Example:
+   Replace `<your-username>` and `<your-password>` with your desired credentials. Update the application configuration file with these credentials:
 
    ```properties
    spring.datasource.url=jdbc:postgresql://<your-host>:<your-port>/<your-database>
@@ -61,9 +63,9 @@ Alternatively, you can use an IDE like IntelliJ IDEA or Eclipse that supports Ma
 1. Download and install RabbitMQ from [here](https://www.rabbitmq.com/download.html).
 2. Start the RabbitMQ service.
 3. Access the RabbitMQ Management Console at `http://localhost:15672`.
-   - Default credentials:
-      - Username: `guest`
-      - Password: `guest`
+    - Default credentials:
+        - Username: `guest`
+        - Password: `guest`
 
 ---
 
@@ -177,7 +179,7 @@ To stop the services:
 
 - Ensure the PostgreSQL and RabbitMQ services are running before starting the Spring Boot application.
 - If you encounter issues, check the logs of the services:
-   - PostgreSQL: Check your system logs or `pg_log` directory.
-   - RabbitMQ: Check the RabbitMQ logs in the installation directory.
+    - PostgreSQL: Check your system logs or `pg_log` directory.
+    - RabbitMQ: Check the RabbitMQ logs in the installation directory.
 
 Enjoy building your application!
