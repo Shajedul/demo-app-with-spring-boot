@@ -3,12 +3,14 @@ package com.example.battery_api.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * Battery entity representing the battery details.
  */
 @Entity
 @Data
-public class Battery {
+public class Battery implements Serializable {
 
     /**
      * Unique identifier for the battery.

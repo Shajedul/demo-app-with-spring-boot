@@ -16,6 +16,7 @@ public class BatteryMapper {
         battery.setName(dto.getName());
         battery.setPostcode(dto.getPostcode());
         battery.setWattCapacity(dto.getWattCapacity());
+
         return battery;
     }
 

@@ -36,7 +36,10 @@ public class GlobalExceptionHandler {
 
             // Add to errors list with index
             Map<String, String> errorDetails = new HashMap<>();
-            errorDetails.put("index", String.valueOf(index));
+            // Only add index if it is not -1
+            if (index != -1) {
+                errorDetails.put("index", String.valueOf(index));
+            }
             errorDetails.put("field", field);
             errorDetails.put("message", message);
             errors.add(errorDetails);
@@ -70,9 +73,12 @@ public class GlobalExceptionHandler {
         ex.getConstraintViolations().forEach(violation -> {
             String propertyPath = violation.getPropertyPath().toString();
             int index = extractIndexFromFieldPath(propertyPath);
-
+            System.out.println(index);
             Map<String, String> errorDetails = new HashMap<>();
-            errorDetails.put("index", String.valueOf(index));
+            // Only add index if it is not -1
+            if (index != -1) {
+                errorDetails.put("index", String.valueOf(index));
+            }
             errorDetails.put("field", propertyPath.substring(propertyPath.lastIndexOf('.') + 1));
             errorDetails.put("message", violation.getMessage());
             errors.add(errorDetails);

@@ -15,13 +15,19 @@ public class BatteryRequestDTO {
     private String name;
 
     @NotBlank(message = "Postcode cannot be null or blank")
-    @Pattern(regexp = "^(0[2-9][0-9]{2}|[1-9][0-9]{3})$", message = "Postcode must be between 0200 and 9999")
+    @Pattern(regexp = "^(0[2-9][0-9]{2}|[1-9][0-9]{3})$", message = "Postcode must be between 0200 and 9999 and consist of exactly 4 digits")
     private String postcode;
 
     @NotNull(message = "Watt capacity is required")
     @Min(value = 1, message = "Watt capacity must be at least 1 KW")
     @Max(value = 1000, message = "Maximum watt capacity can be at least 1000 KW")
     private Integer wattCapacity;
+
+    public BatteryRequestDTO(String name, String postcode, Integer wattCapacity) {
+        this.name = name;
+        this.postcode = postcode;
+        this.wattCapacity = wattCapacity;
+    }
 
     public String getName() {
         return name;
@@ -35,13 +41,4 @@ public class BatteryRequestDTO {
         return wattCapacity;
     }
 
-
-    @Override
-    public String toString() {
-        return "BatteryRequestDTO{" +
-                "name='" + name + '\'' +
-                ", postcode='" + postcode + '\'' +
-                ", wattCapacity=" + wattCapacity +
-                '}';
-    }
 }

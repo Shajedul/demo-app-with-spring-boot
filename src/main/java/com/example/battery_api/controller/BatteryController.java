@@ -6,6 +6,7 @@ import com.example.battery_api.model.Battery;
 import com.example.battery_api.service.BatteryMapper;
 import com.example.battery_api.service.BatteryService;
 import jakarta.validation.*;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +28,6 @@ public class BatteryController {
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> saveBatteries(@RequestBody List<BatteryRequestDTO> requestDTOs) {
-        System.out.println("HERE");
         List<Battery> validBatteries = new ArrayList<>();
         List<Map<String, Object>> invalidEntries = new ArrayList<>();
 
@@ -37,6 +37,7 @@ public class BatteryController {
             try {
                 // Validate the DTO manually
                 validateBatteryRequestDTO(requestDTO);
+                System.out.println(requestDTO);
 
                 // If valid, map to entity
                 Battery battery = batteryMapper.toEntity(requestDTO);
@@ -50,13 +51,13 @@ public class BatteryController {
                 invalidEntries.add(errorEntry);
             }
         }
+        // Publish valid batteries to the message broker (RabbitMQ)
+        batteryService.publishValidBatteries(validBatteries);
 
-        // Save only the valid batteries
-        List<Battery> savedBatteries = batteryService.saveBatteries(validBatteries);
-
-        // Prepare the response
+        // Prepare response
         Map<String, Object> response = new HashMap<>();
-        response.put("savedBatteries", batteryMapper.toDTOList(savedBatteries));
+        response.put("savedBatteriesCount", validBatteries.size());
+        response.put("savedBatteries", batteryMapper.toDTOList(validBatteries)); // Add all valid batteries to the response
         response.put("invalidEntries", invalidEntries);
 
         return ResponseEntity.ok(response);
@@ -80,11 +81,19 @@ public class BatteryController {
                 ));
     }
 
-    @GetMapping("/range")
+    @GetMapping("/with-range")
     public ResponseEntity<Map<String, Object>> getBatteriesInRange(
-            @RequestParam String startPostcode,
-            @RequestParam String endPostcode) {
-        List<Battery> batteries = batteryService.getBatteriesInRange(startPostcode, endPostcode);
+            @RequestParam
+            @Pattern(regexp = "^(0[2-9][0-9]{2}|[1-9][0-9]{3})$", message = "Start postcode must be between 0200 and 9999 and consist of exactly 4 digits")
+            String startPostcode,
+            @RequestParam
+            @Pattern(regexp = "^(0[2-9][0-9]{2}|[1-9][0-9]{3})$", message = "End postcode must be between 0200 and 9999 and consist of exactly 4 digits")
+            String endPostcode,
+            @RequestParam(required = false) Integer minCapacity,
+            @RequestParam(required = false) Integer maxCapacity) {
+
+        List<Battery> batteries = batteryService.getBatteriesInRangeWithCapacity(
+                startPostcode, endPostcode, minCapacity, maxCapacity);
 
         List<String> batteryNames = batteries.stream()
                 .map(Battery::getName)
@@ -92,13 +101,16 @@ public class BatteryController {
                 .toList();
         int totalCapacity = batteries.stream().mapToInt(Battery::getWattCapacity).sum();
         double averageCapacity = batteries.stream().mapToInt(Battery::getWattCapacity).average().orElse(0.0);
+        int totalBatteries = batteries.size(); // Get the total number of batteries
 
         Map<String, Object> response = Map.of(
                 "batteries", batteryNames,
                 "totalCapacity", totalCapacity,
-                "averageCapacity", averageCapacity
+                "averageCapacity", averageCapacity,
+                "totalBatteries", totalBatteries
         );
 
         return ResponseEntity.ok(response);
     }
+
 }
