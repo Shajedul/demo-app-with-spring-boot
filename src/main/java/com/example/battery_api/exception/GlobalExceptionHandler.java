@@ -1,6 +1,8 @@
 package com.example.battery_api.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -17,9 +19,12 @@ import java.util.regex.Pattern;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        logger.error("Validation failed: {}", ex.getMessage());
+        
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Validation failed for one or more fields.");
 
@@ -43,6 +48,8 @@ public class GlobalExceptionHandler {
             errorDetails.put("field", field);
             errorDetails.put("message", message);
             errors.add(errorDetails);
+
+            logger.debug("Validation error - field: {}, message: {}, index: {}", field, message, index);
         });
 
         response.put("errors", errors);
@@ -58,6 +65,7 @@ public class GlobalExceptionHandler {
                 return Integer.parseInt(matcher.group(1));
             }
         } catch (Exception e) {
+            logger.warn("Failed to extract index from field path: {}", fieldPath, e);
             // Default to -1 if no index is found
         }
         return -1;
@@ -65,6 +73,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Map<String, Object>> handleConstraintViolationException(ConstraintViolationException ex) {
+        logger.error("Constraint violation: {}", ex.getMessage());
+        
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Validation failed for one or more fields.");
 
@@ -73,7 +83,8 @@ public class GlobalExceptionHandler {
         ex.getConstraintViolations().forEach(violation -> {
             String propertyPath = violation.getPropertyPath().toString();
             int index = extractIndexFromFieldPath(propertyPath);
-            System.out.println(index);
+            logger.debug("Constraint violation - path: {}, index: {}, message: {}", 
+                propertyPath, index, violation.getMessage());
             Map<String, String> errorDetails = new HashMap<>();
             // Only add index if it is not -1
             if (index != -1) {
