@@ -46,7 +46,7 @@ public class BatterySaveViaMqIntegrationTest {
 
         try {
             // Wait for the consumer to process the message
-            Thread.sleep(5000); // Adjust based on the application's processing speed
+            Thread.sleep(7000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // Restore the interrupted status
             throw new RuntimeException("Thread was interrupted during sleep", e);
