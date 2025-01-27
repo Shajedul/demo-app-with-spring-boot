@@ -135,7 +135,16 @@ public class BatteryController {
         // Prepare response
         Map<String, Object> response = new HashMap<>();
         response.put("savedBatteriesCount", validBatteries.size());
-        response.put("savedBatteries", batteryMapper.toDTOList(validBatteries));
+        List<Map<String, Object>> batteryDTOs = batteryMapper.toDTOList(validBatteries).stream()
+            .map(dto -> {
+                Map<String, Object> batteryMap = new HashMap<>();
+                batteryMap.put("name", dto.getName());
+                batteryMap.put("postcode", dto.getPostcode());
+                batteryMap.put("wattCapacity", dto.getWattCapacity());
+                return batteryMap;
+            })
+            .collect(Collectors.toList());
+        response.put("savedBatteries", batteryDTOs);
         response.put("invalidEntries", invalidEntries);
 
         logger.info("Successfully processed battery save request. Valid: {}, Invalid: {}", 
